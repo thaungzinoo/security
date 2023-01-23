@@ -28,8 +28,8 @@ public class ApplicationSecurityConfig {
     http
 
                .authorizeRequests()
-               .antMatchers("/","index","/css/*","/js/*")
-               .permitAll()
+               .antMatchers("/","index","/css/*","/js/*").permitAll()
+               .antMatchers("/api/**").hasRole(ApplicationUserRole.STUDENT.name())//http permission for userROle only
                .anyRequest()
                .authenticated()
                .and()
@@ -42,14 +42,23 @@ public class ApplicationSecurityConfig {
     //build login user with password who used passwordEncoder//2022.1/19
     @Bean
     public UserDetailsService userDetailsService(){
-         UserDetails MgMyoUser = User.builder()
+         UserDetails MgMyoUser = User.builder() //create student role for permission(23.1.20)
                 .username("MgMyo")
                 .password(passwordEncoder.encode("password"))//must be password encode if u dont it will be error☆
-                .roles("STUDENT")//ROLE-Name
+                .roles(ApplicationUserRole.STUDENT.name())//ROLE-Name
                  .build();
-
+         UserDetails KoKoUser = User.builder()  //create Admin role for permission(23.1.20)
+                 .username("KoKo")
+                 .password(passwordEncoder.encode("password123"))
+                 .roles(ApplicationUserRole.ADMIN.name())
+                 .build();
+         UserDetails TheRockUser = User.builder()
+                 .username("TheRock")
+                 .password(passwordEncoder.encode("password123"))
+                 .roles(ApplicationUserRole.ADMINTRAINEE.name())
+                 .build();
                  return new InMemoryUserDetailsManager(
-                 MgMyoUser);
+                 MgMyoUser, KoKoUser,TheRockUser);
 
     }
 
