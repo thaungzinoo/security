@@ -15,6 +15,10 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+
+import java.util.concurrent.TimeUnit;
 
 import static com.example.login.securityForm.security.ApplicationUserRole.*;
 
@@ -33,18 +37,31 @@ public class ApplicationSecurityConfig {
     @Bean
    public SecurityFilterChain configure(HttpSecurity http) throws Exception{
     http
+//               .csrf().csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+//               .and()
                .csrf().disable()
                .authorizeRequests()
                .antMatchers("/","index","/css/*","/js/*").permitAll()
                .antMatchers("/api/**").hasRole(STUDENT.name())//http permission for userROle only
-               .antMatchers(HttpMethod.DELETE,"/management/api/**").hasAuthority(ApplicationUserPermission.COURSE_WRITE.getPermission())
-               .antMatchers(HttpMethod.POST,"/management/api/**").hasAuthority(ApplicationUserPermission.COURSE_WRITE.getPermission())
-               .antMatchers(HttpMethod.PUT,"/management/api/**").hasAuthority(ApplicationUserPermission.COURSE_WRITE.getPermission())
-               .antMatchers("/management/api/**").hasAnyRole(ApplicationUserRole.ADMIN.name(),ApplicationUserRole.ADMINTRAINEE.name())
                .anyRequest()
                .authenticated()
                .and()
-               .httpBasic();
+               .formLogin()// form base auth
+               .loginPage("/login").permitAll()// customize login 画面
+               .defaultSuccessUrl("/courses",true)//redirect http
+            .and()
+            .rememberMe()//default remember for 2week
+               .tokenValiditySeconds((int) TimeUnit.DAYS.toSeconds(21))// remember me for 2 weeks cookies
+               .key("somethingVerySecured")
+            .and()
+            .logout()
+               .logoutUrl("/logout")
+               .logoutRequestMatcher(new AntPathRequestMatcher("/logout", "GET"))
+               .clearAuthentication(true)
+               .invalidateHttpSession(true)
+               .deleteCookies("JSESSIONID","remember-me","Idea-6668d779")
+               .logoutSuccessUrl("/login");
+              // .httpBasic();//for use form base authorization
     return http.build();
 
     }
@@ -59,12 +76,14 @@ public class ApplicationSecurityConfig {
 //                .roles(ApplicationUserRole.STUDENT.name())//ROLE-Name//ROle --student
                  .authorities(STUDENT.getGrantedAuthorities())
                  .build();
+
          UserDetails KoKoUser = User.builder()  //create Admin role for permission(23.1.20)
                  .username("KoKo")
                  .password(passwordEncoder.encode("password123"))
 //                 .roles(ApplicationUserRole.ADMIN.name())//ROLE-Admin
                  .authorities(ADMIN.getGrantedAuthorities())
                  .build();
+
          UserDetails TheRockUser = User.builder()
                  .username("TheRock")
                  .password(passwordEncoder.encode("password123"))
